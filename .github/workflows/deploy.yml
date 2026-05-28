@@ -22,23 +22,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Apple Certificates
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-
-      - name: Install Provisioning Profile
-        env:
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE }}
-        run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          if [ "${{ github.event.inputs.platform }}" = "iOS" ]; then
-            echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode --output ~/Library/MobileDevice/Provisioning\ Profiles/NetNewsWireiOS.mobileprovision
-          else
-            echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode --output ~/Library/MobileDevice/Provisioning\ Profiles/NetNewsWire.provisionprofile
-          fi
-
       - name: Generate Secrets Sources
         run: ./buildscripts/updateSecrets.sh
 
@@ -62,6 +45,8 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
         run: |
           if [ "${{ github.event.inputs.platform }}" = "iOS" ]; then
             bundle exec fastlane ios beta build_number:${{ env.BUILD_NUMBER }}

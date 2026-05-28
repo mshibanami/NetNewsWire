@@ -1,14 +1,50 @@
 default_platform(:ios)
 
+TEAM_ID = "ZVWN4UJS9M"
+ORGANIZATION_IDENTIFIER = "io.github.mshibanami"
+
+APP_IDENTIFIERS = {
+  ios: [
+    "io.github.mshibanami.NetNewsWire.iOS",
+    "io.github.mshibanami.NetNewsWire.iOS.IntentsExtension",
+    "io.github.mshibanami.NetNewsWire.iOS.SpringboardWidgets",
+    "io.github.mshibanami.NetNewsWire.iOS.Share-Extension"
+  ],
+  macos: [
+    "io.github.mshibanami.NetNewsWire-Evergreen",
+    "io.github.mshibanami.NetNewsWire-Evergreen.Mac.ShareExtension",
+    "io.github.mshibanami.NetNewsWire-Evergreen.SubscribeToFeed"
+  ]
+}
+
+def api_key
+  return nil unless ENV["APP_STORE_CONNECT_API_KEY_ID"] && ENV["APP_STORE_CONNECT_ISSUER_ID"] && ENV["APP_STORE_CONNECT_API_KEY"]
+
+  @api_key ||= app_store_connect_api_key(
+    key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+    issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+    key_content: ENV["APP_STORE_CONNECT_API_KEY"],
+    is_key_content_base64: false
+  )
+end
+
+def sync_signing(platform:, readonly:)
+  match_options = {
+    type: "appstore",
+    platform: platform.to_s,
+    readonly: readonly,
+    app_identifier: APP_IDENTIFIERS[platform],
+    api_key: api_key
+  }.compact
+
+  match(**match_options)
+  lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+end
+
 platform :ios do
-  desc "Push a new beta build to TestFlight and submit for external review"
+  desc "Push a new beta build to TestFlight"
   lane :beta do |options|
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_content: ENV["APP_STORE_CONNECT_API_KEY"],
-      is_key_content_base64: false
-    )
+    profiles = sync_signing(platform: :ios, readonly: is_ci)
 
     gym(
       scheme: "NetNewsWire-iOS",
@@ -16,10 +52,12 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         method: "app-store",
-        teamID: "ZVWN4UJS9M",
+        teamID: TEAM_ID,
+        signingStyle: "manual",
+        provisioningProfiles: profiles,
         manageAppVersionAndBuildNumber: true
       },
-      xcargs: "DEVELOPMENT_TEAM=ZVWN4UJS9M ORGANIZATION_IDENTIFIER=io.github.mshibanami CURRENT_PROJECT_VERSION=#{options[:build_number]}"
+      xcargs: "DEVELOPMENT_TEAM=#{TEAM_ID} ORGANIZATION_IDENTIFIER=#{ORGANIZATION_IDENTIFIER} CURRENT_PROJECT_VERSION=#{options[:build_number]}"
     )
 
     pilot(
@@ -29,17 +67,17 @@ platform :ios do
       changelog: "Automated build from GitHub Actions"
     )
   end
+
+  desc "Sync iOS signing assets"
+  lane :sync_signing do
+    sync_signing(platform: :ios, readonly: false)
+  end
 end
 
 platform :mac do
   desc "Push a new build to App Store Connect for Mac"
   lane :release do |options|
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_content: ENV["APP_STORE_CONNECT_API_KEY"],
-      is_key_content_base64: false
-    )
+    profiles = sync_signing(platform: :macos, readonly: is_ci)
 
     gym(
       scheme: "NetNewsWire",
@@ -47,9 +85,11 @@ platform :mac do
       export_method: "app-store",
       export_options: {
         method: "app-store",
-        teamID: "ZVWN4UJS9M"
+        teamID: TEAM_ID,
+        signingStyle: "manual",
+        provisioningProfiles: profiles
       },
-      xcargs: "DEVELOPMENT_TEAM=ZVWN4UJS9M ORGANIZATION_IDENTIFIER=io.github.mshibanami CURRENT_PROJECT_VERSION=#{options[:build_number]}"
+      xcargs: "DEVELOPMENT_TEAM=#{TEAM_ID} ORGANIZATION_IDENTIFIER=#{ORGANIZATION_IDENTIFIER} CURRENT_PROJECT_VERSION=#{options[:build_number]}"
     )
 
     pilot(
@@ -58,5 +98,10 @@ platform :mac do
       skip_waiting_for_build_processing: false,
       changelog: "Automated build from GitHub Actions"
     )
+  end
+
+  desc "Sync macOS signing assets"
+  lane :sync_signing do
+    sync_signing(platform: :macos, readonly: false)
   end
 end
