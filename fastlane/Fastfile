@@ -17,6 +17,20 @@ APP_IDENTIFIERS = {
   ]
 }
 
+TARGET_MAP = {
+  ios: {
+    "NetNewsWire-iOS" => "io.github.mshibanami.NetNewsWire.iOS",
+    "NetNewsWire iOS Intents Extension" => "io.github.mshibanami.NetNewsWire.iOS.IntentsExtension",
+    "NetNewsWire iOS Widget Extension" => "io.github.mshibanami.NetNewsWire.iOS.SpringboardWidgets",
+    "NetNewsWire iOS Share Extension" => "io.github.mshibanami.NetNewsWire.iOS.Share-Extension"
+  },
+  macos: {
+    "NetNewsWire" => "io.github.mshibanami.NetNewsWire-Evergreen",
+    "Subscribe to Feed" => "io.github.mshibanami.NetNewsWire-Evergreen.SubscribeToFeed",
+    "NetNewsWire Share Extension" => "io.github.mshibanami.NetNewsWire-Evergreen.Mac.ShareExtension"
+  }
+}
+
 def api_key
   return nil unless ENV["APP_STORE_CONNECT_API_KEY_ID"] && ENV["APP_STORE_CONNECT_ISSUER_ID"] && ENV["APP_STORE_CONNECT_API_KEY"]
 
@@ -41,10 +55,24 @@ def sync_signing(platform:, readonly:)
   lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
 end
 
+def configure_signing(platform:, profiles:)
+  TARGET_MAP[platform].each do |target_name, bundle_identifier|
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "NetNewsWire.xcodeproj",
+      team_id: TEAM_ID,
+      targets: [target_name],
+      bundle_identifier: bundle_identifier,
+      profile_name: profiles.fetch(bundle_identifier)
+    )
+  end
+end
+
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do |options|
     profiles = sync_signing(platform: :ios, readonly: is_ci)
+    configure_signing(platform: :ios, profiles: profiles)
 
     gym(
       scheme: "NetNewsWire-iOS",
@@ -78,6 +106,7 @@ platform :mac do
   desc "Push a new build to App Store Connect for Mac"
   lane :release do |options|
     profiles = sync_signing(platform: :macos, readonly: is_ci)
+    configure_signing(platform: :macos, profiles: profiles)
 
     gym(
       scheme: "NetNewsWire",
