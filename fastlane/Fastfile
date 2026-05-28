@@ -56,6 +56,7 @@ def sync_signing(platform:, readonly:)
 end
 
 def configure_signing(platform:, profiles:)
+  identity = "Apple Distribution"
   TARGET_MAP[platform].each do |target_name, bundle_identifier|
     update_code_signing_settings(
       use_automatic_signing: false,
@@ -63,6 +64,7 @@ def configure_signing(platform:, profiles:)
       team_id: TEAM_ID,
       targets: [target_name],
       bundle_identifier: bundle_identifier,
+      code_sign_identity: identity,
       profile_name: profiles.fetch(bundle_identifier)
     )
   end
