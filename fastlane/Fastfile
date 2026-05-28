@@ -42,6 +42,10 @@ def api_key
   )
 end
 
+before_all do |lane, options|
+  setup_ci if is_ci
+end
+
 def sync_signing(platform:, readonly:)
   match_options = {
     type: "appstore",
