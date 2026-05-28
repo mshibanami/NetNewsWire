@@ -91,7 +91,11 @@ struct BuildSettingsVerifier {
             if inBuildSettingsBlock {
                 if nthLine.range(of: "\\u007d[:space:]*;", options: .regularExpression) != nil {
                     inBuildSettingsBlock = false
-                } else if nthLine.range(of: "CODE_SIGN_IDENTITY") != nil {
+                } else if nthLine.range(of: "CODE_SIGN_IDENTITY") != nil ||
+                          nthLine.range(of: "SUPPORTED_PLATFORMS") != nil ||
+                          nthLine.range(of: "SUPPORTS_MACCATALYST") != nil ||
+                          nthLine.range(of: "SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD") != nil ||
+                          nthLine.range(of: "TARGETED_DEVICE_FAMILY") != nil {
 
                 } else {
                     let message = mode == .cmd ? "    \(nthLine)\n" : "Setting '\(nthLine.trimmingCharacters(in: .whitespacesAndNewlines))' should be in an xcconfig file"
