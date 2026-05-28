@@ -103,6 +103,7 @@ platform :ios do
       api_key: api_key,
       app_identifier: APP_IDENTIFIERS[:ios].first,
       distribute_external: true,
+      groups: ["General (External)"],
       skip_waiting_for_build_processing: false,
       changelog: "Automated build from GitHub Actions"
     )
@@ -137,6 +138,7 @@ platform :mac do
       api_key: api_key,
       app_identifier: APP_IDENTIFIERS[:macos].first,
       distribute_external: true,
+      groups: ["General (External)"],
       skip_waiting_for_build_processing: false,
       changelog: "Automated build from GitHub Actions"
     )
