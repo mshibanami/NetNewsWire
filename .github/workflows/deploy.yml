@@ -46,8 +46,9 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
+          export MATCH_GIT_BASIC_AUTHORIZATION=$(echo -n "x-access-token:$GH_PAT" | base64)
           if [ "${{ github.event.inputs.platform }}" = "iOS" ]; then
             bundle exec fastlane ios beta build_number:${{ env.BUILD_NUMBER }}
           else
